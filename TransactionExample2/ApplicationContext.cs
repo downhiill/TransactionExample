@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +13,24 @@ namespace TransactionExample
     {
         public DbSet<StorageTransaction> StorageTransactions { get; set; }
 
+        // Статический экземпляр LoggerFactory для настройки логирования
+        public static readonly ILoggerFactory MyLoggerFactory
+            = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter((category, level) =>
+                        category == DbLoggerCategory.Database.Command.Name
+                        && level == LogLevel.Information) // Фильтр уровня логирования
+                    .AddConsole(); // Вывод в консоль
+            });
+
         // Настройка контекста
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // Указываем, что мы будем использовать In-Memory базу данных для демонстрации
-            optionsBuilder.UseInMemoryDatabase("TestDatabase");
+            optionsBuilder
+                .UseLoggerFactory(MyLoggerFactory) // Подключение логирования
+                .EnableSensitiveDataLogging() // Выводить конфиденциальные данные в логах (например, параметры запросов)
+                .UseInMemoryDatabase("TestDatabase"); // Использование In-Memory базы данных
         }
 
         // Настройка модели данных
