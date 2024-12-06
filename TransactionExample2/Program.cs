@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 using System.Data.SQLite;
 
 //Откат транзакции при ошибке

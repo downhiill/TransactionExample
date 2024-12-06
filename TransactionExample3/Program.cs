@@ -1,6 +1,6 @@
 ﻿using System.Data.SQLite;
 
-//  изоляции "Serializable"
+//  изоляции "Serializabl"
 
 string connectionString = "Data Source=:memory:;Version=3;New=True;";
 
