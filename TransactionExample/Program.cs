@@ -1,55 +1,15 @@
 ﻿
-using System.Data.SQLite;
+using TransactionExample;
 
-// Успешное выполнение транзакции 
+// BulkInsert
 
-using (var connection = new SQLiteConnection("Data Source=:memory:;Version=3;New=True;"))
-{
-    connection.Open();
+var database = new InMemoryDatabase<Account>();
 
-    // Создаем таблицу
-    using (var command = new SQLiteCommand("CREATE TABLE Accounts (Id INTEGER PRIMARY KEY, Name TEXT, Balance REAL);",connection))
-    {
-        command.ExecuteNonQuery();
-    }
-
-    // Начинаем транзакцию
-    using (var transaction = connection.BeginTransaction())
-    {
-        try
+var accounts = new List<Account>
         {
-            // Вставляем данные
-            using (var command = new SQLiteCommand(
-                "INSERT INTO Accounts (Name, Balance) VALUES ('Alice', 1000);", connection, transaction))
-            {
-                command.ExecuteNonQuery();
-            }
+            new Account { Id = 1, Name = "Alice", Balance = 1000 },
+            new Account { Id = 2, Name = "Bob", Balance = 2000 }
+        };
 
-            using (var command = new SQLiteCommand(
-                "INSERT INTO Accounts (Name, Balance) VALUES ('Bob', 500);", connection, transaction))
-            {
-                command.ExecuteNonQuery();
-            }
-
-            // Подтверждаем транзакцию
-            transaction.Commit();
-            Console.WriteLine("Транзакция успешно выполнена.");
-        }
-        catch (Exception ex)
-        {
-            // Откат при ошибке
-            transaction.Rollback();
-            Console.WriteLine($"Ошибка: {ex.Message}");
-        }
-    }
-
-    // Проверяем результаты
-    using (var command = new SQLiteCommand("SELECT * FROM Accounts;", connection))
-    using (var reader = command.ExecuteReader())
-    {
-        while (reader.Read())
-        {
-            Console.WriteLine($"ID: {reader["Id"]}, Name: {reader["Name"]}, Balance: {reader["Balance"]}");
-        }
-    }
-}
+database.BulkInsert(accounts);
+database.PrintData();

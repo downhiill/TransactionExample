@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
+    <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="9.103.6.3" />
   </ItemGroup>
 
 </Project>

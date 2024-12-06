@@ -1,54 +1,23 @@
-﻿using System.Data.SQLite;
+﻿using TransactionExample;
 
-//  изоляции "Serializabl"
+// BulkDelete
 
-string connectionString = "Data Source=:memory:;Version=3;New=True;";
+var database = new InMemoryDatabase<Account>();
 
-using (SQLiteConnection connection = new SQLiteConnection(connectionString))
-{
-    await connection.OpenAsync();
-
-    // Создаем таблицу
-    using (var createTableCommand = new SQLiteCommand(
-        "CREATE TABLE Accounts (Id INTEGER PRIMARY KEY, Name TEXT, Balance REAL);", connection))
-    {
-        await createTableCommand.ExecuteNonQueryAsync();
-    }
-
-    // Начинаем транзакцию
-    SQLiteTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
-
-    try
-    {
-        // Проверяем количество записей
-        SQLiteCommand command1 = new SQLiteCommand(
-            "SELECT COUNT(*) FROM Accounts", connection, transaction);
-        long count = (long)await command1.ExecuteScalarAsync();
-        Console.WriteLine($"Начальное количество записей: {count}");
-
-        // Добавляем новую запись
-        SQLiteCommand command2 = new SQLiteCommand(
-            "INSERT INTO Accounts (Name, Balance) VALUES ('Charlie', 700);", connection, transaction);
-        await command2.ExecuteNonQueryAsync();
-
-        // Подтверждаем транзакцию
-        transaction.Commit();
-        Console.WriteLine("Транзакция завершена успешно.");
-    }
-    catch (Exception ex)
-    {
-        // Откатываем транзакцию при ошибке
-        transaction.Rollback();
-        Console.WriteLine($"Ошибка: {ex.Message}");
-    }
-
-    // Проверяем содержимое таблицы
-    using (var checkCommand = new SQLiteCommand("SELECT * FROM Accounts;", connection))
-    using (var reader = await checkCommand.ExecuteReaderAsync())
-    {
-        while (await reader.ReadAsync())
+var accounts = new List<Account>
         {
-            Console.WriteLine($"ID: {reader["Id"]}, Name: {reader["Name"]}, Balance: {reader["Balance"]}");
-        }
-    }
-}
+            new Account { Id = 1, Name = "Alice", Balance = 1000 },
+            new Account { Id = 2, Name = "Bob", Balance = 2000 },
+            new Account { Id = 3, Name = "Charlie", Balance = 1500 }
+        };
+
+database.BulkInsert(accounts);
+
+var accountsToDelete = new List<Account>
+        {
+            new Account { Id = 1, Name = "Alice", Balance = 1000 },
+            new Account { Id = 3, Name = "Charlie", Balance = 1500 }
+        };
+
+database.BulkDelete(accountsToDelete, (dbItem, deleteItem) => dbItem.Id == deleteItem.Id);
+database.PrintData();

@@ -1,58 +1,23 @@
 ﻿
-using System.Data.SQLite;
+using TransactionExample;
 
-//Откат транзакции при ошибке
+// BulkUpdate
 
-// Создание SQLite базы данных в памяти
-string connectionString = "Data Source=:memory:;Version=3;New=True;";
+var database = new InMemoryDatabase<Account>();
 
-using (SQLiteConnection connection = new SQLiteConnection(connectionString))
-{
-    connection.Open();
-
-    // Создаем таблицу
-    using (var command = new SQLiteCommand(
-        "CREATE TABLE Accounts (Id INTEGER PRIMARY KEY, Name TEXT, Balance REAL);",
-        connection))
-    {
-        command.ExecuteNonQuery();
-    }
-
-    // Начинаем транзакцию
-    SQLiteTransaction transaction = connection.BeginTransaction();
-
-    try
-    {
-        // Первая команда
-        SQLiteCommand command1 = new SQLiteCommand(
-            "INSERT INTO Accounts (Name, Balance) VALUES ('Alice', 1000);",
-            connection, transaction);
-        command1.ExecuteNonQuery();
-
-        // Вторая команда с ошибкой: некорректное имя столбца "WrongColumn"
-        SQLiteCommand command2 = new SQLiteCommand(
-            "INSERT INTO Accounts (Name, WrongColumn) VALUES ('Bob', 500);",
-            connection, transaction);
-        command2.ExecuteNonQuery();
-
-        // Подтверждение транзакции
-        transaction.Commit();
-        Console.WriteLine("Транзакция завершена успешно.");
-    }
-    catch (Exception ex)
-    {
-        // Откат транзакции
-        transaction.Rollback();
-        Console.WriteLine($"Ошибка: {ex.Message}");
-    }
-
-    // Проверяем содержимое таблицы
-    using (var command = new SQLiteCommand("SELECT * FROM Accounts;", connection))
-    using (var reader = command.ExecuteReader())
-    {
-        while (reader.Read())
+var initialAccounts = new List<Account>
         {
-            Console.WriteLine($"ID: {reader["Id"]}, Name: {reader["Name"]}, Balance: {reader["Balance"]}");
-        }
-    }
-}
+            new Account { Id = 1, Name = "Alice", Balance = 1000 },
+            new Account { Id = 2, Name = "Bob", Balance = 2000 }
+        };
+
+database.BulkInsert(initialAccounts);
+
+var updatedAccounts = new List<Account>
+        {
+            new Account { Id = 1, Name = "Alice Updated", Balance = 1500 },
+            new Account { Id = 2, Name = "Bob Updated", Balance = 2500 }
+        };
+
+database.BulkUpdate(updatedAccounts, (oldItem, newItem) => oldItem.Id == newItem.Id);
+database.PrintData();
